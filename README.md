@@ -8,8 +8,9 @@
 ```shell
 # install cmake
 sudo apt-get install cmake
-# install https://mise.jdx.dev/
+# install mise follow: https://mise.jdx.dev/installing-mise.html
 mise install ruby@3.4
+#required_ruby_version = ">= 3.0"
 mise use -g ruby@3.4
 ```
 

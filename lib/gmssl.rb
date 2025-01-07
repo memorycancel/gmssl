@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+LIB_FILE = 'libgmssl.so.3.1'
+
 module GmSSL
   def self.root
     File.expand_path '../..', __FILE__
@@ -15,3 +17,4 @@ module GmSSL
 end
 
 require 'gmssl/version'
+require 'gmssl/random'
