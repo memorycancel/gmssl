@@ -20,6 +20,7 @@ gem install bundler
 git clone https://github.com/memorycancel/gmssl
 cd gmssl
 bundle install -V
+bundle exec rake compile
 bash install_gem
 ```
 
