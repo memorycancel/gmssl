@@ -19,3 +19,4 @@ end
 require 'gmssl/version'
 require 'gmssl/random'
 require 'gmssl/sm3'
+require 'gmssl/sm4'

@@ -1,5 +1,8 @@
+# frozen_string_literal: true
+
 require "minitest/autorun"
 require "gmssl"
+require "helper"
 
 class GmsslTest < Minitest::Test
   include GmSSL
@@ -56,10 +59,11 @@ class GmsslTest < Minitest::Test
     # echo -n abc | `pwd`/GmSSL/build/bin/gmssl sm3hmac -key $KEY_HEX
     # 130eb2c6bc1e22cb1d7177089c59527e09aaa96a08fbaccf05c86dac034615b8
 
-    key = [
-      0x54, 0xA3, 0x8E, 0x3B, 0x59, 0x9E, 0x48, 0xC4,
-      0xF5, 0x81, 0xFE, 0xC1, 0x4B, 0x62, 0xEA, 0x29
-    ].pack("C*")
+    # key = [
+    #   0x54, 0xA3, 0x8E, 0x3B, 0x59, 0x9E, 0x48, 0xC4,
+    #   0xF5, 0x81, 0xFE, 0xC1, 0x4B, 0x62, 0xEA, 0x29
+    # ].pack("C*")
+    key = hex_string_to_packed_bytes("54A38E3B599E48C4F581FEC14B62EA29")
     data = "abc"
 
     ctx = SM3::SM3_HMAC_CTX.new
@@ -79,7 +83,8 @@ class GmsslTest < Minitest::Test
     # dd4fd234a828135264c7c89c13b7e1b3
 
     password = "P@ssw0rd"
-    salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
+    # salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
+    salt = hex_string_to_packed_bytes("667D1BD0262E24E8")
     iterations = SM3::SM3_PBKDF2_MIN_ITER # 10000
     outlen = 16 # Desired length of the output key
     out = FFI::MemoryPointer.new(:uint8, outlen)
@@ -87,5 +92,91 @@ class GmsslTest < Minitest::Test
     out_key_str = out.read_string(outlen).unpack1('H*')
     assert_equal res, 1
     assert_equal out_key_str, "dd4fd234a828135264c7c89c13b7e1b3"
+  end
+
+  # 5   测试SM4
+  # 5.1 测试SM4-CBC加密模式
+  def test_sm4_cbc
+    # `pwd`/GmSSL/build/bin/gmssl rand -outlen 20 -hex # TEXT: hello
+    # `pwd`/GmSSL/build/bin/gmssl rand -outlen 16 -hex # KEY: 117B5119CDFDD46288DAF9064414D801
+    # `pwd`/GmSSL/build/bin/gmssl rand -outlen 16 -hex # IV: 5428F71057DD4AD68C34E38BEA700309
+    # echo -n hello | \
+    #     `pwd`/GmSSL/build/bin/gmssl sm4_cbc -encrypt \
+    #         -key 117B5119CDFDD46288DAF9064414D801 \
+    #         -iv 5428F71057DD4AD68C34E38BEA700309 \
+    #         -out sm4_cbc_ciphertext.bin
+
+    # `pwd`/GmSSL/build/bin/gmssl sm4_cbc -decrypt \
+    #      -key 117B5119CDFDD46288DAF9064414D801 \
+    #      -iv 5428F71057DD4AD68C34E38BEA700309 \
+    #      -in sm4_cbc_ciphertext.bin
+    # hello
+
+    def sm4_cbc_encrypt_decrypt(key, iv, plaintext)
+      ctx = SM4::SM4_CBC_CTX.new
+
+      # Encrypt
+      SM4.sm4_cbc_encrypt_init(ctx, key, iv)
+      ciphertext = FFI::MemoryPointer.new(:uint8, plaintext.bytesize + SM4::SM4_BLOCK_SIZE)
+      outlen = FFI::MemoryPointer.new(:size_t)
+      SM4.sm4_cbc_encrypt_update(ctx, plaintext, plaintext.bytesize, ciphertext, outlen)
+      ciphertext_len = outlen.read(:size_t)
+      SM4.sm4_cbc_encrypt_finish(ctx, ciphertext + ciphertext_len, outlen)
+      ciphertext_len += outlen.read(:size_t)
+
+      # Decrypt
+      SM4.sm4_cbc_decrypt_init(ctx, key, iv)
+      decrypted = FFI::MemoryPointer.new(:uint8, ciphertext_len + SM4::SM4_BLOCK_SIZE)
+      outlen = FFI::MemoryPointer.new(:size_t)
+      SM4.sm4_cbc_decrypt_update(ctx, ciphertext, ciphertext_len, decrypted, outlen)
+      decrypted_len = outlen.read(:size_t)
+      SM4.sm4_cbc_decrypt_finish(ctx, decrypted + decrypted_len, outlen)
+      decrypted_len += outlen.read(:size_t)
+
+      decrypted.read_bytes(decrypted_len)
+    end
+
+    key = "117B5119CDFDD46288DAF9064414D801"  # 16 bytes key
+    iv = "5428F71057DD4AD68C34E38BEA700309"   # 16 bytes IV
+    plaintext = "Hello, sm4_cbc!"
+
+    decrypted_text = sm4_cbc_encrypt_decrypt(key, iv, plaintext)
+    assert_equal decrypted_text, plaintext
+  end
+
+  # 5.2 测试SM4-CTR加密模式
+  def test_sm4_ctr
+    def encrypt_string(input_string, key_hex, ctr_hex)
+      key = hex_string_to_packed_bytes(key_hex)
+      ctr = hex_string_to_packed_bytes(ctr_hex)
+      input_data = input_string.bytes.pack("C*")
+
+      output_data = FFI::MemoryPointer.new(:uint8, input_data.bytesize)
+      output_length = FFI::MemoryPointer.new(:size_t)
+
+      key_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_KEY_SIZE)
+      ctr_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_BLOCK_SIZE)
+      key_ptr.put_array_of_uint8(0, key.bytes)
+      ctr_ptr.put_array_of_uint8(0, ctr.bytes)
+
+      ctx = SM4::SM4_CTR_CTX.new
+      SM4.sm4_ctr_encrypt_init(ctx, key_ptr, ctr_ptr)
+      SM4.sm4_ctr_encrypt_update(ctx, input_data, input_data.bytesize, output_data, output_length)
+      SM4.sm4_ctr_encrypt_finish(ctx, output_data, output_length)
+
+      encrypted_data = output_data.read_string(output_length.read(:size_t))
+      encrypted_data.unpack("H*")[0] # Return hex string representation of encrypted data
+    end
+
+    key_hex = "54A38E3B599E48C4F581FEC14B62EA29"
+    ctr_hex = "00000000000000000000000000000000"
+
+    string1 = "abc"
+    encrypted_string1 = encrypt_string(string1, key_hex, ctr_hex)
+    assert_equal string1.length * 2, encrypted_string1.length
+
+    string2 = "abc123zxc"
+    encrypted_string2 = encrypt_string(string2, key_hex, ctr_hex)
+    assert_equal string2.length * 2, encrypted_string2.length
   end
 end

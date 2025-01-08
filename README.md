@@ -72,7 +72,7 @@ GmSSL::Version.gmssl_version_num
 以下示例默认`include GmSSL`,省略前缀`GmSSL::`:
 
 ### random 随机数生成器
-类Random实现随机数生成功能，通过randBytes方法生成的是具备密码安全性的随机数，可以用于密钥、IV或者其他随机数生成器的随机种子。
+random实现随机数生成功能，通过rand_bytes方法生成的是具备密码安全性的随机数，可以用于密钥、IV或者其他随机数生成器的`随机种子`。
 
 ```ruby
 buf = FFI::MemoryPointer.new(:uint8, 256)
@@ -81,7 +81,7 @@ puts result, buf.read_bytes(256).unpack('H*').first
 ```
 
 ### sm3 哈希
-SM3密码杂凑函数可以将任意长度的输入数据计算为固定32字节长度的哈希值。
+SM3密码杂凑函数可以将`任意长度`的输入数据计算为固定32字节长度的哈希值。
 
 ```ruby
 # echo -n abc | `pwd`/GmSSL/build/bin/gmssl sm3
@@ -104,7 +104,7 @@ puts sm3_digest_str
 
 ### sm3_hmac 消息认证码
 
-HMAC-SM3是基于SM3密码杂凑算法的消息认证码(MAC)算法，消息认证码算法可以看作带密钥的哈希函数，主要用于保护消息不受篡改。通信双方需要事先协商出一个密钥，比如32字节的随机字节序列，数据的发送方用这个密钥对消息计算MAC值，并且把MAC值附在消息后面。消息的接收方在收到消息后，用相同的密钥计算消息的MAC值，并且和发送消息附带的MAC值做对比，如果一致说明消息没有被篡改，如果不一致，说明消息被篡改了。
+HMAC-SM3是基于SM3密码杂凑算法的消息认证码(MAC)算法，消息认证码算法可以看作带密钥的哈希函数，主要用于`保护消息不受篡改`。通信双方需要事先协商出一个密钥，比如32字节的随机字节序列，数据的发送方用这个密钥对消息计算MAC值，并且把MAC值附在消息后面。消息的接收方在收到消息后，用相同的密钥计算消息的MAC值，并且和发送消息附带的MAC值做对比，如果一致说明消息没有被篡改，如果不一致，说明消息被篡改了。
 
 ```ruby
 # KEY_HEX=`$PWD/GmSSL/build/bin/gmssl rand -outlen 16 -hex`
@@ -128,7 +128,7 @@ res = mac.read_string(SM3::SM3_HMAC_SIZE).unpack1('H*')
 
 ### sm3_pbkdf2 基于SM3的口令密钥导出函数
 
-常用软件如Word、PDF、WinRAR等支持基于口令的文件加密，字符串形式的口令相对于随机的密钥字节序列对用户来说更容易记忆和输入，对用户更加友好。但是由于口令中存在的信息熵远低于随机的二进制密钥，直接将口令字符串作为密钥，甚至无法抵御来自个人计算机的暴力破解攻击。一种典型的错误用法是直接用哈希函数计算口令的哈希值，将看起来随机的哈希值作为密钥使用。但是由于口令的空间相对较小，攻击者仍然可以尝试所有可能口令的哈希值，对于暴力破解来说，破解口令的哈希值和原始口令，在攻击难度上没有太大差别。
+常用软件如Word、PDF、WinRAR等支持基于口令的文件加密，字符串形式的口令相对于随机的密钥字节序列`对用户来说更容易记忆和输入，对用户更加友好`。但是由于口令中存在的信息熵远低于随机的二进制密钥，直接将口令字符串作为密钥，甚至无法抵御来自个人计算机的暴力破解攻击。一种典型的错误用法是直接用哈希函数计算口令的哈希值，将看起来随机的哈希值作为密钥使用。但是由于口令的空间相对较小，攻击者仍然可以尝试所有可能口令的哈希值，对于暴力破解来说，破解口令的哈希值和原始口令，在攻击难度上没有太大差别。
 
 安全和规范的做法是采用一个基于口令的密钥导出函数(Password-Based Key Derivation Function, PBKDF)从口令中导出密钥。通过PBKDF导出密钥并不会降低攻击者在暴力破解时尝试的口令数量，但是可以防止攻击者通过查预计算表的方式来加速破解，并且可以大大增加攻击者尝试每一个可能口令的计算时间。PBKDF2是安全的并且使用广泛的PBKDF算法标准之一，算法采用哈希函数作为将口令映射为密钥的主要部件，通过加入随机并且公开的盐值(Salt)来抵御预计算，通过增加多轮的循环计算来增加在线破解的难度，并且支持可变的导出密钥长度。
 
@@ -145,4 +145,103 @@ outlen = 16 # Desired length of the output key
 out = FFI::MemoryPointer.new(:uint8, outlen)
 res = SM3.sm3_pbkdf2(password, password.bytesize, salt, salt.bytesize, iterations, outlen, out)
 out_key_str = out.read_string(outlen).unpack1('H*')
+```
+
+### sm4 分组密码
+
+SM4算法是分组密码算法，其密钥长度为128比特（16字节），分组长度为128比特（16字节）。SM4算法每次只能加密或者解密一个固定16字节长度的分组，不支持加解密任意长度的消息。分组密码通常作为更高层密码方案的一个组成部分，不适合普通上层应用调用。如果应用需要保护数据和消息，那么应该优先选择采用SM4-GCM模式，或者为了兼容已有的系统，也可以使用SM4-CBC或SM4-CTR模式。
+多次调用Sm4的分组加密解密功能可以实现ECB模式，由于ECB模式在消息加密应用场景中并不安全，因此GmSSL中没有提供ECB模式。如果应用需要开发SM4的其他加密模式，也可基于SM4来开发这些模式。
+
+### sm4_cbc 加密模式
+
+CBC模式是应用最广泛的分组密码加密模式之一，虽然目前不建议在新的应用中继续使用CBC默认，为了`保证兼容性`，应用仍然可能需要使用CBC模式。
+
+```ruby
+# `pwd`/GmSSL/build/bin/gmssl rand -outlen 20 -hex # TEXT: hello
+# `pwd`/GmSSL/build/bin/gmssl rand -outlen 16 -hex # KEY: 117B5119CDFDD46288DAF9064414D801
+# `pwd`/GmSSL/build/bin/gmssl rand -outlen 16 -hex # IV: 5428F71057DD4AD68C34E38BEA700309
+# echo -n hello | \
+#     `pwd`/GmSSL/build/bin/gmssl sm4_cbc -encrypt \
+#         -key 117B5119CDFDD46288DAF9064414D801 \
+#         -iv 5428F71057DD4AD68C34E38BEA700309 \
+#         -out sm4_cbc_ciphertext.bin
+
+# `pwd`/GmSSL/build/bin/gmssl sm4_cbc -decrypt \
+#      -key 117B5119CDFDD46288DAF9064414D801 \
+#      -iv 5428F71057DD4AD68C34E38BEA700309 \
+#      -in sm4_cbc_ciphertext.bin
+# hello
+
+def sm4_cbc_encrypt_decrypt(key, iv, plaintext)
+  ctx = SM4::SM4_CBC_CTX.new
+
+  # SM4 CBC Encrypt
+  SM4.sm4_cbc_encrypt_init(ctx, key, iv)
+  ciphertext = FFI::MemoryPointer.new(:uint8, plaintext.bytesize + SM4::SM4_BLOCK_SIZE)
+  outlen = FFI::MemoryPointer.new(:size_t)
+  SM4.sm4_cbc_encrypt_update(ctx, plaintext, plaintext.bytesize, ciphertext, outlen)
+  ciphertext_len = outlen.read(:size_t)
+  SM4.sm4_cbc_encrypt_finish(ctx, ciphertext + ciphertext_len, outlen)
+  ciphertext_len += outlen.read(:size_t)
+
+  # SM4 CBC Decrypt
+  SM4.sm4_cbc_decrypt_init(ctx, key, iv)
+  decrypted = FFI::MemoryPointer.new(:uint8, ciphertext_len + SM4::SM4_BLOCK_SIZE)
+  outlen = FFI::MemoryPointer.new(:size_t)
+  SM4.sm4_cbc_decrypt_update(ctx, ciphertext, ciphertext_len, decrypted, outlen)
+  decrypted_len = outlen.read(:size_t)
+  SM4.sm4_cbc_decrypt_finish(ctx, decrypted + decrypted_len, outlen)
+  decrypted_len += outlen.read(:size_t)
+
+  decrypted.read_bytes(decrypted_len)
+end
+
+key = "117B5119CDFDD46288DAF9064414D801"  # 16 bytes key
+iv = "5428F71057DD4AD68C34E38BEA700309"   # 16 bytes IV
+plaintext = "Hello, GmSSL!"
+
+decrypted_text = sm4_cbc_encrypt_decrypt(key, iv, plaintext)
+```
+
+### sm4_ctr 加密模式
+
+CTR加密模式可以加密任意长度的消息，和CBC模式不同，并不需要采用填充方案，因此SM4-CTR加密输出的密文长度和输入的明文`等长`。对于`存储或传输带宽有限的应用场景`，SM4-CTR相对SM4-CBC模式，密文`不会增加格外长度`。
+
+```ruby
+def encrypt_string(input_string, key_hex, ctr_hex)
+  key = hex_string_to_packed_bytes(key_hex)
+  ctr = hex_string_to_packed_bytes(ctr_hex)
+  input_data = input_string.bytes.pack("C*")
+
+  output_data = FFI::MemoryPointer.new(:uint8, input_data.bytesize)
+  output_length = FFI::MemoryPointer.new(:size_t)
+
+  key_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_KEY_SIZE)
+  ctr_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_BLOCK_SIZE)
+  key_ptr.put_array_of_uint8(0, key.bytes)
+  ctr_ptr.put_array_of_uint8(0, ctr.bytes)
+
+  ctx = SM4::SM4_CTR_CTX.new
+  SM4.sm4_ctr_encrypt_init(ctx, key_ptr, ctr_ptr)
+  SM4.sm4_ctr_encrypt_update(ctx, input_data, input_data.bytesize, output_data, output_length)
+  SM4.sm4_ctr_encrypt_finish(ctx, output_data, output_length)
+
+  encrypted_data = output_data.read_string(output_length.read(:size_t))
+  encrypted_data.unpack("H*")[0] # Return hex string representation of encrypted data
+end
+
+key_hex = "54A38E3B599E48C4F581FEC14B62EA29"
+ctr_hex = "00000000000000000000000000000000"
+
+string1 = "abc"
+encrypted_string1 = encrypt_string(string1, key_hex, ctr_hex)
+# assert_equal string1.length * 2, encrypted_string1.length
+```
+
+### sm4_gcm 认证加密模式
+
+SM4的GCM模式是一种认证加密模式，和CBC、CTR等加密模式的主要区别在于，GCM模式的加密过程默认在密文最后添加完整性标签，也就是MAC标签，因此应用在采用SM4-GCM模式时，没有必要再计算并添加SM3-HMAC了。在有的应用场景中，比如对消息报文进行加密，对于消息头部的一段数据（报头字段）只需要做完整性保护，不需要加密，SM4-GCM支持这种场景。在Sm4Gcm类的init方法中，除了key、iv参数，还可以提供aad字节数字用于提供不需要加密的消息头部数据。
+
+```ruby
+
 ```
