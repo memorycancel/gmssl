@@ -52,12 +52,31 @@ GmSSL::Version.gmssl_version_num
 
 ## 示例
 
+在调用的代码块内 include GmSSL, 调用函数时可以省略前缀,例如:
+
+```ruby
+require 'gmssl'
+
+include GmSSL
+Version.gmssl_version_num
+#=> 30102
+```
+
+等价于:
+```ruby
+require 'gmssl'
+GmSSL::Version.gmssl_version_num
+#=> 30102
+```
+
+以下示例默认`include GmSSL`,省略前缀`GmSSL::`:
+
 ### random 随机数生成器
 类Random实现随机数生成功能，通过randBytes方法生成的是具备密码安全性的随机数，可以用于密钥、IV或者其他随机数生成器的随机种子。
 
 ```ruby
 buf = FFI::MemoryPointer.new(:uint8, 256)
-result = GmSSL::Random.rand_bytes(buf, 256)
+result = Random.rand_bytes(buf, 256)
 puts result, buf.read_bytes(256).unpack('H*').first
 ```
 
@@ -69,17 +88,17 @@ SM3密码杂凑函数可以将任意长度的输入数据计算为固定32字节
 # 66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0
 
 # Initialize SM3
-sm3_ctx = GmSSL::SM3::SM3_CTX.new
-GmSSL::SM3.sm3_init(sm3_ctx)
+sm3_ctx = SM3::SM3_CTX.new
+SM3.sm3_init(sm3_ctx)
 
 # Update SM3 context with data
 data = "abc"
-GmSSL::SM3.sm3_update(sm3_ctx, data, data.bytesize)
+SM3.sm3_update(sm3_ctx, data, data.bytesize)
 
 # Finalize the hash
-digest = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_DIGEST_SIZE)
-GmSSL::SM3.sm3_finish(sm3_ctx, digest)
-sm3_digest_str = digest.read_bytes(GmSSL::SM3::SM3_DIGEST_SIZE).unpack('H*').first
+digest = FFI::MemoryPointer.new(:uint8, SM3::SM3_DIGEST_SIZE)
+SM3.sm3_finish(sm3_ctx, digest)
+sm3_digest_str = digest.read_bytes(SM3::SM3_DIGEST_SIZE).unpack('H*').first
 puts sm3_digest_str
 ```
 
@@ -99,12 +118,12 @@ key = [
 ].pack("C*")
 data = "abc"
 
-ctx = GmSSL::SM3::SM3_HMAC_CTX.new
-GmSSL::SM3.sm3_hmac_init(ctx, key, key.bytesize)
-GmSSL::SM3.sm3_hmac_update(ctx, data, data.bytesize)
-mac = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_HMAC_SIZE)
-GmSSL::SM3.sm3_hmac_finish(ctx, mac)
-res = mac.read_string(GmSSL::SM3::SM3_HMAC_SIZE).unpack1('H*')
+ctx = SM3::SM3_HMAC_CTX.new
+SM3.sm3_hmac_init(ctx, key, key.bytesize)
+SM3.sm3_hmac_update(ctx, data, data.bytesize)
+mac = FFI::MemoryPointer.new(:uint8, SM3::SM3_HMAC_SIZE)
+SM3.sm3_hmac_finish(ctx, mac)
+res = mac.read_string(SM3::SM3_HMAC_SIZE).unpack1('H*')
 ```
 
 ### sm3_pbkdf2 基于SM3的口令密钥导出函数
@@ -121,9 +140,9 @@ res = mac.read_string(GmSSL::SM3::SM3_HMAC_SIZE).unpack1('H*')
 
 password = "P@ssw0rd"
 salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
-iterations = GmSSL::SM3::SM3_PBKDF2_MIN_ITER # 10000
+iterations = SM3::SM3_PBKDF2_MIN_ITER # 10000
 outlen = 16 # Desired length of the output key
 out = FFI::MemoryPointer.new(:uint8, outlen)
-res = GmSSL::SM3.sm3_pbkdf2(password, password.bytesize, salt, salt.bytesize, iterations, outlen, out)
+res = SM3.sm3_pbkdf2(password, password.bytesize, salt, salt.bytesize, iterations, outlen, out)
 out_key_str = out.read_string(outlen).unpack1('H*')
 ```

@@ -2,6 +2,8 @@ require "minitest/autorun"
 require "gmssl"
 
 class GmsslTest < Minitest::Test
+  include GmSSL
+
   #  1. 测试c库路径
   def test_root
     assert_includes __FILE__, GmSSL.root
@@ -9,17 +11,17 @@ class GmsslTest < Minitest::Test
 
   #  2. 测试版本
   def test_version_num
-    assert_equal GmSSL::Version.gmssl_version_num, 30102
+    assert_equal Version.gmssl_version_num, 30102
   end
 
   def test_version_str
-    assert_equal GmSSL::Version.gmssl_version_str, 'GmSSL 3.1.2 Dev'
+    assert_equal Version.gmssl_version_str, 'GmSSL 3.1.2 Dev'
   end
 
   # 3. 测试随机生成器
   def test_rand_bytes
     buf = FFI::MemoryPointer.new(:uint8, 256)
-    result = GmSSL::Random.rand_bytes(buf, 256)
+    result = Random.rand_bytes(buf, 256)
     assert_equal result, 1
     assert_equal buf.read_bytes(256).unpack('H*').first.length, 512
   end
@@ -33,17 +35,17 @@ class GmsslTest < Minitest::Test
       "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
 
     # Initialize SM3
-    sm3_ctx = GmSSL::SM3::SM3_CTX.new
-    GmSSL::SM3.sm3_init(sm3_ctx)
+    sm3_ctx = SM3::SM3_CTX.new
+    SM3.sm3_init(sm3_ctx)
 
     # Update SM3 context with data
     data = "abc"
-    GmSSL::SM3.sm3_update(sm3_ctx, data, data.bytesize)
+    SM3.sm3_update(sm3_ctx, data, data.bytesize)
 
     # Finalize the hash
-    digest = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_DIGEST_SIZE)
-    GmSSL::SM3.sm3_finish(sm3_ctx, digest)
-    sm3_digest_str = digest.read_bytes(GmSSL::SM3::SM3_DIGEST_SIZE).unpack1('H*')
+    digest = FFI::MemoryPointer.new(:uint8, SM3::SM3_DIGEST_SIZE)
+    SM3.sm3_finish(sm3_ctx, digest)
+    sm3_digest_str = digest.read_bytes(SM3::SM3_DIGEST_SIZE).unpack1('H*')
     assert_equal sm3_digest_str, sm3_bin_str
   end
 
@@ -60,12 +62,12 @@ class GmsslTest < Minitest::Test
     ].pack("C*")
     data = "abc"
 
-    ctx = GmSSL::SM3::SM3_HMAC_CTX.new
-    GmSSL::SM3.sm3_hmac_init(ctx, key, key.bytesize)
-    GmSSL::SM3.sm3_hmac_update(ctx, data, data.bytesize)
-    mac = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_HMAC_SIZE)
-    GmSSL::SM3.sm3_hmac_finish(ctx, mac)
-    res = mac.read_string(GmSSL::SM3::SM3_HMAC_SIZE).unpack1('H*')
+    ctx = SM3::SM3_HMAC_CTX.new
+    SM3.sm3_hmac_init(ctx, key, key.bytesize)
+    SM3.sm3_hmac_update(ctx, data, data.bytesize)
+    mac = FFI::MemoryPointer.new(:uint8, SM3::SM3_HMAC_SIZE)
+    SM3.sm3_hmac_finish(ctx, mac)
+    res = mac.read_string(SM3::SM3_HMAC_SIZE).unpack1('H*')
     assert_equal res, "130eb2c6bc1e22cb1d7177089c59527e09aaa96a08fbaccf05c86dac034615b8"
   end
 
@@ -78,10 +80,10 @@ class GmsslTest < Minitest::Test
 
     password = "P@ssw0rd"
     salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
-    iterations = GmSSL::SM3::SM3_PBKDF2_MIN_ITER # 10000
+    iterations = SM3::SM3_PBKDF2_MIN_ITER # 10000
     outlen = 16 # Desired length of the output key
     out = FFI::MemoryPointer.new(:uint8, outlen)
-    res = GmSSL::SM3.sm3_pbkdf2(password, password.bytesize, salt, salt.bytesize, iterations, outlen, out)
+    res = SM3.sm3_pbkdf2(password, password.bytesize, salt, salt.bytesize, iterations, outlen, out)
     out_key_str = out.read_string(outlen).unpack1('H*')
     assert_equal res, 1
     assert_equal out_key_str, "dd4fd234a828135264c7c89c13b7e1b3"
