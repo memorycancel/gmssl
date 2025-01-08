@@ -54,7 +54,10 @@ class GmsslTest < Minitest::Test
     # echo -n abc | `pwd`/GmSSL/build/bin/gmssl sm3hmac -key $KEY_HEX
     # 130eb2c6bc1e22cb1d7177089c59527e09aaa96a08fbaccf05c86dac034615b8
 
-    key = "54A38E3B599E48C4F581FEC14B62EA29"
+    key = [
+      0x54, 0xA3, 0x8E, 0x3B, 0x59, 0x9E, 0x48, 0xC4,
+      0xF5, 0x81, 0xFE, 0xC1, 0x4B, 0x62, 0xEA, 0x29
+    ].pack("C*")
     data = "abc"
 
     ctx = GmSSL::SM3::SM3_HMAC_CTX.new
@@ -63,8 +66,7 @@ class GmsslTest < Minitest::Test
     mac = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_HMAC_SIZE)
     GmSSL::SM3.sm3_hmac_finish(ctx, mac)
     res = mac.read_string(GmSSL::SM3::SM3_HMAC_SIZE).unpack1('H*')
-    # ef82f6bf1e8709dfc712b5af49b7455b4d6d77c787b67f4311d4ec73b3c6be46
-    assert_equal res.bytesize, 64
+    assert_equal res, "130eb2c6bc1e22cb1d7177089c59527e09aaa96a08fbaccf05c86dac034615b8"
   end
 
   # 4.3 测试基于SM3的口令的密钥导出函数 PBKDF2
@@ -73,7 +75,7 @@ class GmsslTest < Minitest::Test
     # 667D1BD0262E24E8
     # `pwd`/GmSSL/build/bin/gmssl sm3_pbkdf2 -pass P@ssw0rd -salt 667D1BD0262E24E8 -iter 10000 -outlen 16 -hex
     # dd4fd234a828135264c7c89c13b7e1b3
-    # Example usage of the sm3_pbkdf2 function
+
     password = "P@ssw0rd"
     salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
     iterations = GmSSL::SM3::SM3_PBKDF2_MIN_ITER # 10000

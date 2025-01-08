@@ -22,6 +22,7 @@ git clone https://github.com/memorycancel/gmssl
 cd gmssl
 bundle install -V
 bundle exec rake compile
+bundle exec rake test
 bash install_gem
 ```
 
@@ -87,7 +88,15 @@ puts sm3_digest_str
 HMAC-SM3是基于SM3密码杂凑算法的消息认证码(MAC)算法，消息认证码算法可以看作带密钥的哈希函数，主要用于保护消息不受篡改。通信双方需要事先协商出一个密钥，比如32字节的随机字节序列，数据的发送方用这个密钥对消息计算MAC值，并且把MAC值附在消息后面。消息的接收方在收到消息后，用相同的密钥计算消息的MAC值，并且和发送消息附带的MAC值做对比，如果一致说明消息没有被篡改，如果不一致，说明消息被篡改了。
 
 ```ruby
-key = "54A38E3B599E48C4F581FEC14B62EA29"
+# KEY_HEX=`$PWD/GmSSL/build/bin/gmssl rand -outlen 16 -hex`
+# 54A38E3B599E48C4F581FEC14B62EA29
+# echo -n abc | `pwd`/GmSSL/build/bin/gmssl sm3hmac -key $KEY_HEX
+# 130eb2c6bc1e22cb1d7177089c59527e09aaa96a08fbaccf05c86dac034615b8
+
+key = [
+  0x54, 0xA3, 0x8E, 0x3B, 0x59, 0x9E, 0x48, 0xC4,
+  0xF5, 0x81, 0xFE, 0xC1, 0x4B, 0x62, 0xEA, 0x29
+].pack("C*")
 data = "abc"
 
 ctx = GmSSL::SM3::SM3_HMAC_CTX.new
@@ -109,7 +118,7 @@ res = mac.read_string(GmSSL::SM3::SM3_HMAC_SIZE).unpack1('H*')
 # 667D1BD0262E24E8
 # `pwd`/GmSSL/build/bin/gmssl sm3_pbkdf2 -pass P@ssw0rd -salt 667D1BD0262E24E8 -iter 10000 -outlen 16 -hex
 # dd4fd234a828135264c7c89c13b7e1b3
-# Example usage of the sm3_pbkdf2 function
+
 password = "P@ssw0rd"
 salt = [0x66, 0x7D, 0x1B, 0xD0, 0x26, 0x2E, 0x24, 0xE8].pack("C*") # salt
 iterations = GmSSL::SM3::SM3_PBKDF2_MIN_ITER # 10000
