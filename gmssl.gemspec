@@ -12,7 +12,9 @@ Gem::Specification.new do |s|
 
   s.files       = [
     "lib/gmssl.rb",
-    "lib/gmssl/version.rb"
+    "lib/gmssl/version.rb",
+    "lib/gmssl/random.rb",
+    "lib/gmssl/sm3.rb"
   ]
 
   s.files += Dir.glob([

@@ -57,8 +57,7 @@ GmSSL::Version.gmssl_version_num
 ```ruby
 buf = FFI::MemoryPointer.new(:uint8, 256)
 result = GmSSL::Random.rand_bytes(buf, 256)
-assert_equal result, 1
-assert_equal buf.read_bytes(256).unpack('H*').first.length, 512
+puts result, buf.read_bytes(256).unpack('H*').first
 ```
 
 ### SM3哈希
@@ -67,8 +66,6 @@ SM3密码杂凑函数可以将任意长度的输入数据计算为固定32字节
 ```ruby
 # echo -n abc | `pwd`/GmSSL/build/bin/gmssl sm3
 # 66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0
-sm3_bin_str =
-  "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0"
 
 # Initialize SM3
 sm3_ctx = GmSSL::SM3::SM3_CTX.new
@@ -82,5 +79,7 @@ GmSSL::SM3.sm3_update(sm3_ctx, data, data.bytesize)
 digest = FFI::MemoryPointer.new(:uint8, GmSSL::SM3::SM3_DIGEST_SIZE)
 GmSSL::SM3.sm3_finish(sm3_ctx, digest)
 sm3_digest_str = digest.read_bytes(GmSSL::SM3::SM3_DIGEST_SIZE).unpack('H*').first
-assert_equal sm3_digest_str, sm3_bin_str
+puts sm3_digest_str
 ```
+
+###
