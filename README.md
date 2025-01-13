@@ -298,3 +298,63 @@ input = "hello_sm4_gcm"
 
 encrypted_output, tag, decrypted_output = sm4_gcm_encrypt_decrypt(key, iv, aad, input)
 ```
+
+### 祖冲之序列密码
+
+祖冲之密码算法(ZU Cipher, ZUC)是一种序列密码，密钥和IV长度均为16字节。作为序列密码ZUC可以加密可变长度的输入数据，并且输出的密文数据长度和输入数据等长，因此适合不允许密文膨胀的应用场景。在国密算法体系中，ZUC算法的设计晚于SM4，在32位通用处理器上通常比SM4-CBC明显要快。
+
+在安全性方面，不建议在一组密钥和IV的情况下用ZUC算法加密大量的数据（比如GB级或TB级），避免序列密码超长输出时安全性降低。另外ZUC算法本身并不支持数据的完整性保护，因此在采用ZUC算法加密应用数据时，应考虑配合HMAC-SM3提供完整性保护。
+
+```ruby
+# GmSSL/build/bin/gmssl rand -outlen 20 -hex # TEXT: holazuc
+# GmSSL/build/bin/gmssl rand -outlen 16 -hex # KEY: 117B5119CDFDD46288DAF9064414D801
+# GmSSL/build/bin/gmssl rand -outlen 16 -hex # IV: 5428F71057DD4AD68C34E38BEA700309
+# echo -n holazuc | GmSSL/build/bin/gmssl zuc \
+#     -key 117B5119CDFDD46288DAF9064414D801 \
+#     -iv 5428F71057DD4AD68C34E38BEA700309 \
+#     -out zuc_ciphertext_out.bin
+
+# GmSSL/build/bin/gmssl zuc \
+#     -key 117B5119CDFDD46288DAF9064414D801 \
+#     -iv 5428F71057DD4AD68C34E38BEA700309 \
+#     -in zuc_ciphertext_out.bin
+
+def zuc_encrypt_decrypt(key, iv, input)
+  key = hex_string_to_packed_bytes key
+  iv = hex_string_to_packed_bytes iv
+
+  key_ptr = FFI::MemoryPointer.new(:uint8, ZUC::ZUC_KEY_SIZE)
+  key_ptr.put_array_of_uint8(0, key.bytes)
+  iv_ptr = FFI::MemoryPointer.new(:uint8, ZUC::ZUC_IV_SIZE)
+  iv_ptr.put_array_of_uint8(0, iv.bytes)
+
+  # Encrypt
+  ctx = ZUC::ZUC_CTX.new
+  ZUC::zuc_encrypt_init(ctx, key_ptr, iv_ptr)
+  input_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+  input_ptr.put_array_of_uint8(0, input.bytes)
+  output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+  outlen_ptr = FFI::MemoryPointer.new(:size_t)
+  ZUC::zuc_encrypt_update(ctx, input_ptr, input.bytesize, output_ptr, outlen_ptr)
+  ZUC::zuc_encrypt_finish(ctx, output_ptr, outlen_ptr)
+  encrypted_output = output_ptr.get_array_of_uint8(0, input.bytesize)
+
+  # Decrypt
+  ctx = ZUC::ZUC_CTX.new
+  ZUC::zuc_encrypt_init(ctx, key_ptr, iv_ptr)
+  encrypted_input_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+  encrypted_input_ptr.put_array_of_uint8(0, encrypted_output)
+  decrypted_output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+  ZUC::zuc_encrypt_update(ctx, encrypted_input_ptr, input.bytesize, decrypted_output_ptr, outlen_ptr)
+  ZUC::zuc_encrypt_finish(ctx, decrypted_output_ptr, outlen_ptr)
+  decrypted_output = decrypted_output_ptr.get_array_of_uint8(0, input.bytesize)
+
+  { encrypted: encrypted_output.pack('C*'), decrypted: decrypted_output.pack('C*') }
+end
+
+key = "117B5119CDFDD46288DAF9064414D801"  # 16 bytes key
+iv = "5428F71057DD4AD68C34E38BEA700309"   # 16 bytes IV
+input = "zuc"
+
+result = zuc_encrypt_decrypt(key, iv, input)
+```

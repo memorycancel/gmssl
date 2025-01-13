@@ -238,4 +238,61 @@ class GmsslTest < Minitest::Test
     encrypted_output, tag, decrypted_output = sm4_gcm_encrypt_decrypt(key, iv, aad, input)
     assert_equal input, decrypted_output
   end
+
+  # 6 测试祖冲之Zuc序列密码
+  def test_zuc
+    # GmSSL/build/bin/gmssl rand -outlen 20 -hex # TEXT: holazuc
+    # GmSSL/build/bin/gmssl rand -outlen 16 -hex # KEY: 117B5119CDFDD46288DAF9064414D801
+    # GmSSL/build/bin/gmssl rand -outlen 16 -hex # IV: 5428F71057DD4AD68C34E38BEA700309
+    # echo -n holazuc | GmSSL/build/bin/gmssl zuc \
+    #     -key 117B5119CDFDD46288DAF9064414D801 \
+    #     -iv 5428F71057DD4AD68C34E38BEA700309 \
+    #     -out zuc_ciphertext_out.bin
+
+    # GmSSL/build/bin/gmssl zuc \
+    #     -key 117B5119CDFDD46288DAF9064414D801 \
+    #     -iv 5428F71057DD4AD68C34E38BEA700309 \
+    #     -in zuc_ciphertext_out.bin
+
+    def zuc_encrypt_decrypt(key, iv, input)
+      key = hex_string_to_packed_bytes key
+      iv = hex_string_to_packed_bytes iv
+
+      key_ptr = FFI::MemoryPointer.new(:uint8, ZUC::ZUC_KEY_SIZE)
+      key_ptr.put_array_of_uint8(0, key.bytes)
+      iv_ptr = FFI::MemoryPointer.new(:uint8, ZUC::ZUC_IV_SIZE)
+      iv_ptr.put_array_of_uint8(0, iv.bytes)
+
+      # Encrypt
+      ctx = ZUC::ZUC_CTX.new
+      ZUC::zuc_encrypt_init(ctx, key_ptr, iv_ptr)
+      input_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      input_ptr.put_array_of_uint8(0, input.bytes)
+      output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      outlen_ptr = FFI::MemoryPointer.new(:size_t)
+      ZUC::zuc_encrypt_update(ctx, input_ptr, input.bytesize, output_ptr, outlen_ptr)
+      ZUC::zuc_encrypt_finish(ctx, output_ptr, outlen_ptr)
+      encrypted_output = output_ptr.get_array_of_uint8(0, input.bytesize)
+
+      # Decrypt
+      ctx = ZUC::ZUC_CTX.new
+      ZUC::zuc_encrypt_init(ctx, key_ptr, iv_ptr)
+      encrypted_input_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      encrypted_input_ptr.put_array_of_uint8(0, encrypted_output)
+      decrypted_output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      ZUC::zuc_encrypt_update(ctx, encrypted_input_ptr, input.bytesize, decrypted_output_ptr, outlen_ptr)
+      ZUC::zuc_encrypt_finish(ctx, decrypted_output_ptr, outlen_ptr)
+      decrypted_output = decrypted_output_ptr.get_array_of_uint8(0, input.bytesize)
+
+      { encrypted: encrypted_output.pack('C*'), decrypted: decrypted_output.pack('C*') }
+    end
+
+    key = "117B5119CDFDD46288DAF9064414D801"  # 16 bytes key
+    iv = "5428F71057DD4AD68C34E38BEA700309"   # 16 bytes IV
+    input = "zuc"
+
+    result = zuc_encrypt_decrypt(key, iv, input)
+    assert_equal result[:encrypted].bytesize, input.length
+    assert_equal result[:decrypted], input
+  end
 end
