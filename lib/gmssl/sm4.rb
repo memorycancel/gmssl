@@ -13,6 +13,7 @@ module GmSSL
     SM4_KEY_SIZE = 16
     SM4_BLOCK_SIZE = 16
     SM4_NUM_ROUNDS = 32
+    SM4_GCM_MAX_TAG_SIZE = 16
 
     class SM4_KEY < FFI::Struct
       layout :rk, [:uint32, SM4_NUM_ROUNDS]

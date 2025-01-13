@@ -179,4 +179,63 @@ class GmsslTest < Minitest::Test
     encrypted_string2 = encrypt_string(string2, key_hex, ctr_hex)
     assert_equal string2.length * 2, encrypted_string2.length
   end
+
+  # 5.3 测试SM4-GCM认证加密模式
+  def test_sm4_gcm
+    # TEXT=hello_sm4_gcm                                #hello_sm4_gcm
+    # KEY=`GmSSL/build/bin/gmssl rand -outlen 16 -hex`  #B789047EE36BD1DB9BCCD5B84D0E8C8D
+    # IV=`GmSSL/build/bin/gmssl rand -outlen 12 -hex`   #F0F83C02897BE824AAB58361
+    # AAD="The_AAD_Data"                                #The_AAD_Data
+    # echo -n hello_sm4_gcm | \
+    #  GmSSL/build/bin/gmssl sm4_gcm -encrypt \
+    #    -key B789047EE36BD1DB9BCCD5B84D0E8C8D \
+    #    -iv F0F83C02897BE824AAB58361 \
+    #    -aad The_AAD_Data \
+    #    -out sm4_gcm_ciphertext.bin
+
+    # GmSSL/build/bin/gmssl sm4_gcm -decrypt \
+    #    -key B789047EE36BD1DB9BCCD5B84D0E8C8D \
+    #    -iv F0F83C02897BE824AAB58361 \
+    #    -aad The_AAD_Data \
+    #    -in sm4_gcm_ciphertext.bin
+    # => hello_sm4_gcm
+    def sm4_gcm_encrypt_decrypt(key, iv, aad, input)
+      key = hex_string_to_packed_bytes key
+      iv = hex_string_to_packed_bytes iv
+      key_struct = SM4::SM4_KEY.new
+      key_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_KEY_SIZE)
+      key_ptr.put_array_of_uint8(0, key.bytes)
+      SM4::sm4_set_encrypt_key(key_struct, key_ptr)
+
+      iv_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_BLOCK_SIZE)
+      iv_ptr.put_array_of_uint8(0, iv.bytes)
+
+      aad_ptr = FFI::MemoryPointer.new(:uint8, aad.bytesize)
+      aad_ptr.put_array_of_uint8(0, aad.bytes)
+
+      input_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      input_ptr.put_array_of_uint8(0, input.bytes)
+
+      output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      tag_ptr = FFI::MemoryPointer.new(:uint8, SM4::SM4_GCM_MAX_TAG_SIZE)
+
+      SM4::sm4_gcm_encrypt(key_struct, iv_ptr, iv.bytesize, aad_ptr, aad.bytesize, input_ptr, input.bytesize, output_ptr, SM4::SM4_GCM_MAX_TAG_SIZE, tag_ptr)
+      encrypted_output = output_ptr.read_string(input.bytesize)
+      tag = tag_ptr.read_string(SM4::SM4_GCM_MAX_TAG_SIZE)
+
+      decrypted_output_ptr = FFI::MemoryPointer.new(:uint8, input.bytesize)
+      SM4::sm4_gcm_decrypt(key_struct, iv_ptr, iv.bytesize, aad_ptr, aad.bytesize, output_ptr, input.bytesize, tag_ptr, SM4::SM4_GCM_MAX_TAG_SIZE, decrypted_output_ptr)
+      decrypted_output = decrypted_output_ptr.read_string(input.bytesize)
+
+      return encrypted_output, tag, decrypted_output
+    end
+
+    key = "B789047EE36BD1DB9BCCD5B84D0E8C8D"  # 16 bytes key
+    iv = "F0F83C02897BE824AAB58361"           # 12 bytes IV
+    aad = "The_AAD_Data"
+    input = "hello_sm4_gcm"
+
+    encrypted_output, tag, decrypted_output = sm4_gcm_encrypt_decrypt(key, iv, aad, input)
+    assert_equal input, decrypted_output
+  end
 end

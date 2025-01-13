@@ -50,3 +50,5 @@ tags
 
 # src of https://github.com/guanzhi/GmSSL
 GmSSL
+
+*.bin
