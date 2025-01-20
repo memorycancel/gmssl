@@ -49,6 +49,13 @@ tags
 .ruby-version
 
 # src of https://github.com/guanzhi/GmSSL
-GmSSL
+GmSSL/*
+!GmSSL/build
+GmSSL/build/*
+!GmSSL/build/bin
+GmSSL/build/bin/*
+# 留下库文件
+!GmSSL/build/bin/libgmssl.so.3
+!GmSSL/build/bin/libgmssl.so.3.1
 
 *.bin
