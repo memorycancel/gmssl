@@ -3,27 +3,10 @@
 `gmssl` 是GmSSL密码库 `https://github.com/guanzhi/GmSSL` 的Ruby语言封装。
 依赖ruby的`ffi`实现。
 
-## 准备
-
-```shell
-# install cmake
-sudo apt-get install cmake
-# install mise follow: https://mise.jdx.dev/installing-mise.html
-mise install ruby@3.4
-#required_ruby_version = ">= 3.0"
-mise use -g ruby@3.4
-```
-
 ## 安装
 
 ```shell
-gem install bundler
-git clone https://github.com/memorycancel/gmssl
-cd gmssl
-bundle install -V
-bundle exec rake compile
-bundle exec rake test
-bash install_gem
+gem install gmssl
 ```
 
 ## 使用
