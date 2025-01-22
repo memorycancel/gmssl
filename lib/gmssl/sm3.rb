@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'ffi'
+require 'helper'
 
 module GmSSL
   module SM3
@@ -56,5 +57,34 @@ module GmSSL
     attach_function :sm3_digest_init, [SM3_DIGEST_CTX.by_ref, :pointer, :size_t], :int
     attach_function :sm3_digest_update, [SM3_DIGEST_CTX.by_ref, :pointer, :size_t], :int
     attach_function :sm3_digest_finish, [SM3_DIGEST_CTX.by_ref, :pointer], :int
+
+    def self.digest(data)
+      # Initialize SM3
+      sm3_ctx = SM3_CTX.new
+      sm3_init(sm3_ctx)
+      # Update SM3 context with data
+      sm3_update(sm3_ctx, data, data.bytesize)
+      # Finalize the hash
+      digest = FFI::MemoryPointer.new(:uint8, SM3_DIGEST_SIZE)
+      sm3_finish(sm3_ctx, digest)
+      digest.read_bytes(SM3_DIGEST_SIZE).unpack1('H*')
+    end
+
+    def self.hmac(hex_key, data)
+      key = hex_string_to_packed_bytes(hex_key)
+      ctx = SM3_HMAC_CTX.new
+      sm3_hmac_init(ctx, key, key.bytesize)
+      sm3_hmac_update(ctx, data, data.bytesize)
+      mac = FFI::MemoryPointer.new(:uint8, SM3_HMAC_SIZE)
+      sm3_hmac_finish(ctx, mac)
+      mac.read_string(SM3_HMAC_SIZE).unpack1('H*')
+    end
+
+    def self.pbkdf2(psswd, hex_salt, iterations, outlen)
+      salt = hex_string_to_packed_bytes(hex_salt)
+      out = FFI::MemoryPointer.new(:uint8, outlen)
+      sm3_pbkdf2(psswd, psswd.bytesize, salt, salt.bytesize, iterations, outlen, out)
+      out.read_string(outlen).unpack1('H*')
+    end
   end
 end

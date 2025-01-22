@@ -235,7 +235,7 @@ class GmsslTest < Minitest::Test
     aad = "The_AAD_Data"
     input = "hello_sm4_gcm"
 
-    encrypted_output, tag, decrypted_output = sm4_gcm_encrypt_decrypt(key, iv, aad, input)
+    _, _, decrypted_output = sm4_gcm_encrypt_decrypt(key, iv, aad, input)
     assert_equal input, decrypted_output
   end
 

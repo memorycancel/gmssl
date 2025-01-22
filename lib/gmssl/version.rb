@@ -10,5 +10,9 @@ module GmSSL
 
     attach_function :gmssl_version_num, [], :int
     attach_function :gmssl_version_str, [], :string
+
+    def self.info
+      "VERSION: #{gmssl_version_num}, #{gmssl_version_str}"
+    end
   end
 end
