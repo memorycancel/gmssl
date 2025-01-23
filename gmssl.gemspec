@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "gmssl"
-  s.version     = "1.1.0"
+  s.version     = "1.1.1"
   s.summary     = "GmSSL ruby FFI"
   s.description = "GmSSL c to ruby FFI"
   s.authors     = ["memorycancel"]
@@ -20,7 +20,8 @@ Gem::Specification.new do |s|
     "lib/gmssl/sm3.rb",
     "lib/gmssl/sm4.rb",
     "lib/gmssl/ghash.rb",
-    "lib/gmssl/zuc.rb"
+    "lib/gmssl/zuc.rb",
+    "lib/gmssl/helper.rb"
   ]
 
   s.files += Dir.glob([

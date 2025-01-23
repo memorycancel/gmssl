@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require 'ffi'
-require 'helper'
+require 'gmssl/helper'
 
 module GmSSL
   module SM3
+    extend Helper
     extend FFI::Library
     file = File.join GmSSL.lib, LIB_FILE
     ffi_lib file

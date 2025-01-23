@@ -25,7 +25,7 @@ GmSSL::Version.info #=> VERSION: 30102, GmSSL 3.1.2 Dev
 require 'gmssl'
 
 include GmSSL
-Version.gmssl_version_num #=> VERSION: 30102, GmSSL 3.1.2 Dev
+Version.info #=> VERSION: 30102, GmSSL 3.1.2 Dev
 ```
 
 等价于:
@@ -92,7 +92,7 @@ plaintext = "Hello, sm4_cbc!"
 SM4.cbc_encrypt(key, iv, plaintext)
 #=> 4b6f370c339fc510c19a1a3f78460725
 
-SM4.cbc_decrypt(key, iv, ciphertext)
+SM4.cbc_decrypt(key, iv, "4b6f370c339fc510c19a1a3f78460725")
 #=> Hello, sm4_cbc!
 ```
 
