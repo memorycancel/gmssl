@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-LIB_FILE = 'libgmssl.so.3.1'
+LIB_FILE = case Gem::Platform.local.os
+when "darwin"
+  "libgmssl.3.1.dylib"
+when "linux"
+  "libgmssl.so.3.1"
+end
 
 module GmSSL
   def self.root

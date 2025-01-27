@@ -2,7 +2,7 @@
 
 # https://github.com/guanzhi/GmSSL/blob/master/INSTALL.md
 
-plat="linux"
+plat=Gem::Platform.local.os
 desc "build native gem for #{plat} platform"
 task "compile" do
   sh <<~EOT

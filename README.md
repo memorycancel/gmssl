@@ -1,7 +1,7 @@
 ![](GMSSL.png)
 
 `gmssl` 是GmSSL密码库 [`https://github.com/guanzhi/GmSSL`](https://github.com/guanzhi/GmSSL) 的Ruby语言封装。
-依赖ruby的`ffi`实现。
+依赖ruby的[`ffi`](https://github.com/ffi/ffi/wiki/Core-Concepts)实现。
 
 ## 安装
 
@@ -145,7 +145,6 @@ ZUC.decrypt(key, iv, "c4fee6")
 
 ## TODO
 
-+ 兼容 Linux/MacOS/Windows 编译（目前支持 Linux)
-+ 按SM2、SM3、SM4、SM9、ZUC逐次完成开发
-+ 与Rails加密模块集成
-+ 添加 ffi 测试
++ 目前支持 linux MacOS(darwin)✅,~~Windows~~❌
++ 目前支持 SM2、SM3、SM4、ZUC✅ ~~SM9~~❌
++ 与Rails加密模块集成❌

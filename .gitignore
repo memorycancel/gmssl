@@ -57,5 +57,6 @@ GmSSL/build/bin/*
 # 留下库文件
 !GmSSL/build/bin/libgmssl.so.3
 !GmSSL/build/bin/libgmssl.so.3.1
+!GmSSL/build/bin/libgmssl.3.1.dylib
 
 *.bin

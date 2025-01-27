@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
 rm *.gem
-bundle exec gem build gmssl.gemspec
-bundle exec gem install gmssl-*.gem
+gem build gmssl.gemspec
+gem install gmssl-*.gem

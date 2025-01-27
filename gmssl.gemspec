@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "gmssl"
-  s.version     = "1.1.1"
+  s.version     = "1.1.2"
   s.summary     = "GmSSL ruby FFI"
   s.description = "GmSSL c to ruby FFI"
   s.authors     = ["memorycancel"]
